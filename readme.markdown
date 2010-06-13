@@ -1,9 +1,9 @@
-= LuaMVC
+# LuaMVC
 
-=== Dependencies
+### Dependencies
 
 * LuaFileSystem (http://keplerproject.github.com/luafilesystem/)
 
-=== Example dependencies
+### Example dependencies
 
 * LuaWeb (http://github.com/JakobOvrum/LuaWeb)
