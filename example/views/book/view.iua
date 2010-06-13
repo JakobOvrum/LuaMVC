@@ -1,0 +1,5 @@
+<% if book then %>
+	<p>Name: <%= book.name %></p>
+<% else %>
+	<p>No such book!</p>
+<% end %>

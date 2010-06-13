@@ -5,11 +5,13 @@ local unpack = unpack
 local pairs = pairs
 local pcall = pcall
 local assert = assert
+local error = error
 local setfenv = setfenv
 
-local print = print
+local _G = _G
 
 local loader = require "luamvc.loader"
+local request = require "luamvc.request"
 
 module "luamvc"
 
@@ -21,6 +23,7 @@ function new(path)
 		path = path;
 		controllers = loader.controllers(path .. "/controllers");
 		views = loader.views(path .. "/views");
+		errorView = loader.view(path .. "/internal/error.iua");
 	}, mvc)
 	
 	return self
@@ -33,37 +36,27 @@ local function parsePath(path)
 end
 
 function mvc:handle(req)
-	local request = {
-		serveText = function(fmt, ...)
-			req:reply{
-				status = 200; 
-				headers = {["Content-Type"] = "text/html"};
-				body = fmt:format(...);
-			}
-		end;
-
-		serveError = function(code, message)
-			req:reply{
-				status = code;
-				body = message;
-			}
-		end;
-	}
+	local r = request.new(req)
 	
-	local succ, err = pcall(self.serve, self, request, parsePath(req.path))
+	local succ, err = pcall(self.serve, self, r, parsePath(req.path))
 	if not succ then
-		request.serveError(500, self.views.error{message = err})
+		r.serveError(500, self.errorView{message = err})
 	end
 end
 
-function mvc:serve(request, controller, action, ...)
+function mvc:serve(r, controller, action, ...)
 	controller = controller or "index"
 	action = action or "index"
 	
 	local f = assert(self.controllers[controller], concat{"controller \"", controller, "\" not found"})[action]
 	
-	setfenv(assert(f, concat{"action \"", action, "\" not found"}), request)
-	
+	setfenv(assert(f, concat{"action \"", action, "\" not found"}), r)
+
 	f(...)
+
+	if not r.served then
+		local view = assert(self.views[controller][action], concat{"view \"", controller, "/", action, ".iua\" not found"}) 
+		r.serveText(view(r))
+	end
 end
 
