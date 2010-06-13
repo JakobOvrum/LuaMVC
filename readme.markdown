@@ -1,9 +1,11 @@
-# LuaMVC
+LuaMVC
+==============
 
-### Dependencies
+MVC web framework for Lua.
 
-* LuaFileSystem (http://keplerproject.github.com/luafilesystem/)
+Dependencies
+--------------
+* [LuaFileSystem](http://keplerproject.github.com/luafilesystem/)
 
 ### Example dependencies
-
-* LuaWeb (http://github.com/JakobOvrum/LuaWeb)
+* [LuaWeb](http://github.com/JakobOvrum/LuaWeb)
