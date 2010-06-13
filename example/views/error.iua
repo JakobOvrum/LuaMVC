@@ -1,0 +1,11 @@
+<!DOCTYPE PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>Error</title>
+	</head>
+	<body>
+		<div style="margin: 0px auto; width: 90%; padding: 10px; margin-bottom: 40px; border: 3px #888 solid; background-color: #efefef;">
+			<p><%= message %></p>
+		</div>
+	</body>
+</html>
