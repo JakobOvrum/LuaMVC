@@ -10,23 +10,6 @@ local concat = table.concat
 local insert = table.insert
 local open = io.open
 
-local io = io
-local print = print
-
-local _G, error, tostring = _G, error, tostring
-local viewEnv = {
-	__index = function(o, key)
-		local v = rawget(o, key)
-		if v == nil then
-			v = rawget(_G, key)
-			
-			if v == nil then
-				error(concat{"undefined variable \"", tostring(key), "\""}, 2)
-			end
-		end
-	end
-}
-
 module "luamvc.loader"
 
 function controller(path)
@@ -66,12 +49,11 @@ function view(path)
 	return function(env)
 		local reply = {}
 
-		env.echo = function(str)
+		function env.echo(str)
 			insert(reply, str)
 		end
-		
-		setfenv(code, setmetatable(env, viewEnv))
 
+		setfenv(code, env)
 		code()
 		
 		return concat(reply)
@@ -96,5 +78,12 @@ function controllers(path)
 end
 
 function views(path)
-	return load(path, "iua", view)
+	views = {}
+	for name in lfs.dir(path) do
+		local p = concat{path, "/", name}
+		if lfs.attributes(p).mode == "directory" then
+			views[name] = load(p, "iua", view)
+		end
+	end
+	return views
 end
