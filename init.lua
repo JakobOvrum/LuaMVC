@@ -5,8 +5,11 @@ local unpack = unpack
 local pairs = pairs
 local pcall = pcall
 local assert = assert
+local type = type
 local error = error
 local setfenv = setfenv
+local traceback = debug.traceback
+local xpcall = xpcall
 
 local _G = _G
 
@@ -18,12 +21,17 @@ module "luamvc"
 local mvc = {}
 mvc.__index = mvc
 
-function new(path)
+function new(path, debug)
+    if debug == nil then
+        debug = true
+    end
+    
 	local self = setmetatable({
 		path = path;
 		controllers = loader.controllers(path .. "/controllers");
 		views = loader.views(path .. "/views");
-		errorView = loader.view(path .. "/internal/error.iua");
+		errorView = loader.view("error", path .. "/internal/error.iua");
+		debug = debug;
 	}, mvc)
 	
 	return self
@@ -37,20 +45,49 @@ end
 
 function mvc:handle(req)
 	local r = request.new(req)
-	
-	local succ, err = pcall(self.serve, self, r, parsePath(req.path))
-	if not succ then
-		r.serveError(500, self.errorView{message = err})
-	end
+
+	local succ, err, trace
+	if self.debug then
+	    succ, err = xpcall(
+	        function() self:serve(r, parsePath(req.path)) end, 
+	        function(msg) trace = traceback("", 2):sub(2) return msg end
+	    )
+    else
+        succ, err = pcall(self.serve, self, r, parsePath(req.path))
+    end
+    
+    if not succ then
+        local code, message
+        
+        if type(err) == "table" then
+            code, message = err.code, err.message
+        else
+            code, message = 500, self.debug and err or "500 Internal Server Error"
+        end
+
+        
+        r.serveError(code, self.errorView{
+            code = code;
+            message = message;
+            trace = trace;
+        })
+    end
 end
 
 function mvc:serve(r, controller, action, ...)
 	controller = controller or "index"
 	action = action or "index"
 	
-	local f = assert(self.controllers[controller], concat{"controller \"", controller, "\" not found"})[action]
+	local f = self.controllers[controller][action]
+
+	if not f then
+	    error({
+	        code = 404;
+	        message = concat{"action \"", action, "\" not defined for controller \"", controller, "\""};
+	    }, 0)
+	end
 	
-	setfenv(assert(f, concat{"action \"", action, "\" not found"}), r)
+	setfenv(f, r)
 
 	f(...)
 

@@ -9,19 +9,34 @@ local loadstring = loadstring
 local concat = table.concat
 local insert = table.insert
 local open = io.open
+local error = error
 
 module "luamvc.loader"
 
-function controller(path)
+function controller(name, path)
 	local env = {}
-	local f = assert(loadfile(path))
+	local f, err = loadfile(path)
+	if not f then
+	    error({
+	        code = 404;
+	        message = concat{"controller \"", name, "\" not found: ", err};
+	    }, 0)
+	end
+	
 	setfenv(f, env)
 	f()
 	return env
 end
 
-function view(path)
-	local f = assert(open(path))
+function view(name, path)
+	local f, err = open(path)
+	if not f then
+	    error({
+	        code = 404;
+	        message = concat{"view \"", name, "\" not found: ", err};
+	    }, 0)
+	end
+	
 	local source = f:read("*a")
 	f:close()
 	
@@ -61,12 +76,21 @@ function view(path)
 end
 
 local function load(path, extension, loader)
-	local c = {}
+	local c = setmetatable({}, {
+        __index = function(c, name)
+            local v = rawget(c, name)
+            if v == nil then
+                v = loader(name, concat{path, "/", name, ".", extension})
+                c[name] = v
+            end
+            return v
+        end
+    })
 
 	for fileName in lfs.dir(path) do
 		local name = fileName:match(concat{"([^%.]+)%.", extension, "$"})
 		if name then
-			c[name] = loader(concat{path, "/", fileName})
+			c[name] = loader(name, concat{path, "/", fileName})
 		end
 	end
 
