@@ -5,10 +5,9 @@ local books = {
 function view(id)
 	if not id then
 		serveText("Book ID not specified!")
-		return
+	else
+	    book = books[tonumber(id)]
 	end
-
-	book = books[tonumber(id)]
 end
 
 function add()
