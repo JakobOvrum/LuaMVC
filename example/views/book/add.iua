@@ -1,0 +1,9 @@
+<% if params then %>
+    <p><%= params.lastname %>, <%= params.firstname %></p> 
+<% end %>
+
+<form name="input" action="add" method="get">
+    First name: <input type="text" name="firstname" /><br />
+    Last name: <input type="text" name="lastname" /><br />
+    <input type="Submit" value="add" />
+</form>

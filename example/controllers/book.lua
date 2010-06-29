@@ -11,6 +11,5 @@ function view(id)
 end
 
 function add()
-	--no view
 end
 

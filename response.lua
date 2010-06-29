@@ -13,6 +13,7 @@ module "luamvc.response"
 
 function new(req)
 	local self = {}
+    self.params = req.params
 	
 	function self.serveText(fmt, ...)
 	    util.checkArg(1, "string", fmt)
