@@ -13,7 +13,8 @@ local xpcall = xpcall
 
 local _G = _G
 
-local loader = require "luamvc.loader"
+local controller = require "luamvc.controller"
+local view = require "luamvc.view"
 local request = require "luamvc.request"
 
 module "luamvc"
@@ -28,9 +29,8 @@ function new(path, debug)
     
 	local self = setmetatable({
 		path = path;
-		controllers = loader.controllers(path .. "/controllers");
-		views = loader.views(path .. "/views");
-		errorView = loader.view("error", path .. "/internal/error.iua");
+		controllers = controller.load(path .. "/controllers", path .. "/views");
+		errorView = view.load(path .. "/internal/error.iua");
 		debug = debug;
 	}, mvc)
 	
@@ -57,12 +57,12 @@ function mvc:handle(req)
     end
     
     if not succ then
-        local code, message
+        local code, message, traceback
         
         if type(err) == "table" then
-            code, message = err.code, err.message
+            code, message, traceback = err.code, err.message, err.trace or trace
         else
-            code, message = 500, self.debug and err or "500 Internal Server Error"
+            code, message, traceback = 500, self.debug and err or "500 Internal Server Error", trace
         end
 
         
@@ -78,18 +78,15 @@ function mvc:serve(r, controller, action, ...)
 	controller = controller or "index"
 	action = action or "index"
 	
-	local f = self.controllers[controller][action]
-
-	if not f then
+	local c = self.controllers[controller]
+	if not c then
 	    error({
 	        code = 404;
-	        message = concat{"action \"", action, "\" not defined for controller \"", controller, "\""};
+	        message = ("controller \"%s\" not defined"):format(controller)
 	    }, 0)
 	end
-	
-	setfenv(f, r)
 
-	f(...)
+    c:run(action, r, ...)
 
 	if not r.served then
 		local view = assert(self.views[controller][action], concat{"view \"", controller, "/", action, ".iua\" not found"}) 
