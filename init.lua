@@ -48,10 +48,7 @@ function mvc:handle(req)
 
 	local succ, err
 	if self.debug then
-	    succ, err = xpcall(
-	        function() self:serve(r, parsePath(req.path)) end, 
-	        traceback
-	    )
+	    succ, err = xpcall(function() self:serve(r, parsePath(req.path)) end, traceback)
     else
         succ, err = pcall(self.serve, self, r, parsePath(req.path))
     end

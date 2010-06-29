@@ -47,7 +47,7 @@ function load(path)
 		index = stop + 1
 	end
 
-	local code = assert(loadstring(concat(code, "\r\n"), "@"..path:match("([^/\\]+)$")))
+	local code = assert(loadstring(concat(code, "\r\n"), "@" .. path:match("([^/\\]+)$")))
 
 	local function run(env)
 		local reply = {}
