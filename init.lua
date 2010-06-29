@@ -89,11 +89,8 @@ function mvc:serve(r, controller, action, ...)
 	    }, 0)
 	end
 
-    c:run(action, r, ...)
+    local output = c:run(action, r, ...)
 
-	if not r.served then
-		local view = assert(self.views[controller][action], concat{"view \"", controller, "/", action, ".iua\" not found"}) 
-		r.serveText(view(r))
-	end
+    r.serveText(output)
 end
 
