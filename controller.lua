@@ -84,7 +84,7 @@ function controller:view(name)
     return viewLoader.load(path)
 end
 
-function controller:run(action, env, ...)
+function controller:run(action, response, ...)
     self:reload()
 
     local function raise(b, errormsg, code)
@@ -99,14 +99,17 @@ function controller:run(action, env, ...)
     end
     
     local f = raise(self.actions[action], "action not defined", 404)
+
+    local env = setmetatable({}, {__index = response})
     setfenv(f, env)
 
     local args = {...}
 	raise(xpcall(function() f(unpack(args)) end, traceback))
 
-    local succ, view = raise(xpcall(function() return self:view(action) end, traceback))
-    local succ, output = raise(xpcall(function() return view(env) end, traceback))
-    
-    return output
+	if not response.hasReplied() then
+        local succ, view = raise(xpcall(function() return self:view(action) end, traceback))
+        local succ, output = raise(xpcall(function() return view(env) end, traceback))
+        response.serveText(output)
+    end
 end
 

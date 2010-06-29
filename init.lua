@@ -9,13 +9,12 @@ local type = type
 local error = error
 local setfenv = setfenv
 local traceback = debug.traceback
+local stderr = io.stderr
 local xpcall = xpcall
-
-local _G = _G
 
 local controller = require "luamvc.controller"
 local view = require "luamvc.view"
-local request = require "luamvc.request"
+local response = require "luamvc.response"
 
 module "luamvc"
 
@@ -44,13 +43,13 @@ local function parsePath(path)
 end
 
 function mvc:handle(req)
-	local r = request.new(req)
+	local resp = response.new(req)
 
 	local succ, err
 	if self.debug then
-	    succ, err = xpcall(function() self:serve(r, parsePath(req.path)) end, traceback)
+	    succ, err = xpcall(function() self:serve(resp, parsePath(req.path)) end, traceback)
     else
-        succ, err = pcall(self.serve, self, r, parsePath(req.path))
+        succ, err = pcall(self.serve, self, resp, parsePath(req.path))
     end
     
     if not succ then
@@ -66,15 +65,23 @@ function mvc:handle(req)
             end
         end
 
-        r.serveError(code, self.errorView{
-            code = code;
-            message = message;
-            trace = errormsg;
-        })
+        if resp.hasReplied() then
+            stderr:write(("late error %d: %s"):format(code, message))
+            if errormsg then
+                stderr:write(errormsg)
+                stderr:write("\r\n")
+            end
+        else
+            resp.serveError(code, self.errorView{
+                code = code;
+                message = message;
+                trace = errormsg;
+            })
+        end
     end
 end
 
-function mvc:serve(r, controller, action, ...)
+function mvc:serve(resp, controller, action, ...)
 	controller = controller or "index"
 	action = action or "index"
 	
@@ -86,8 +93,6 @@ function mvc:serve(r, controller, action, ...)
 	    }, 0)
 	end
 
-    local output = c:run(action, r, ...)
-
-    r.serveText(output)
+    c:run(action, resp, ...)
 end
 
