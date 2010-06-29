@@ -10,7 +10,8 @@ local _G = _G
 module "luamvc.request"
 
 local request = {}
-function request:__index(key)
+request.__index = _G
+--[[function request:__index(key)
 	local v = rawget(self, key)
 	if v == nil then
 		v = rawget(_G, key)
@@ -20,7 +21,7 @@ function request:__index(key)
 		end
 	end
 	return v
-end
+end]]
 
 function new(req)
 	local self = {served = false}
