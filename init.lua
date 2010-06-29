@@ -46,30 +46,33 @@ end
 function mvc:handle(req)
 	local r = request.new(req)
 
-	local succ, err, trace
+	local succ, err
 	if self.debug then
 	    succ, err = xpcall(
 	        function() self:serve(r, parsePath(req.path)) end, 
-	        function(msg) trace = traceback("", 2):sub(2) return msg end
+	        traceback
 	    )
     else
         succ, err = pcall(self.serve, self, r, parsePath(req.path))
     end
     
     if not succ then
-        local code, message, traceback
+        local code, message, errormsg
         
         if type(err) == "table" then
-            code, message, traceback = err.code, err.message, err.trace or trace
+            code, message = err.code, err.message
+            errormsg = err.trace
         else
-            code, message, traceback = 500, self.debug and err or "500 Internal Server Error", trace
+            code, message = 500, "500 Internal Server Error"
+            if self.debug then
+                errormsg = err
+            end
         end
 
-        
         r.serveError(code, self.errorView{
             code = code;
             message = message;
-            trace = trace;
+            trace = errormsg;
         })
     end
 end

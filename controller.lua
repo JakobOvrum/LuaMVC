@@ -5,6 +5,7 @@ local rawget = rawget
 local setfenv = setfenv
 local assert = assert
 local loadfile = loadfile
+local xpcall = xpcall
 local pcall = pcall
 local loadstring = loadstring
 local concat = table.concat
@@ -13,7 +14,8 @@ local open = io.open
 local attributes = lfs.attributes
 local time = os.time
 local error = error
-local print = print
+local traceback = debug.traceback
+local unpack = unpack
 
 local viewLoader = require "luamvc.view"
 
@@ -85,24 +87,25 @@ end
 function controller:run(action, env, ...)
     self:reload()
 
-    local function raise(b, message, code)
+    local function raise(b, errormsg, code)
         if not b then
             error({
                 code = code or 500;
-                message = ("error running action \"%s\": %s"):format(action, message);
+                message = ("error running action \"%s\" for controller \"%s\""):format(action, self.name);
+                trace = errormsg;
             }, 0)
         end
-        return b
+        return b, errormsg
     end
     
     local f = raise(self.actions[action], "action not defined", 404)
     setfenv(f, env)
 
-    raise(pcall(f, ...))
+    local args = {...}
+	raise(xpcall(function() f(unpack(args)) end, traceback))
 
-    local view = raise(pcall(self.view, self, action))
-
-    local output = raise(pcall(view, env))
+    local succ, view = raise(xpcall(function() return self:view(action) end, traceback))
+    local succ, output = raise(xpcall(function() return view(env) end, traceback))
     
     return output
 end
