@@ -98,7 +98,7 @@ function controller:run(action, response, ...)
         return b, errormsg
     end
     
-    local f = raise(self.actions[action], "action not defined", 404)
+    local f = raise(self.actions[action], ("action \"%s\" not defined"):format(action), 404)
 
     local env = setmetatable({}, {__index = response})
     setfenv(f, env)
